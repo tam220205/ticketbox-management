@@ -10,6 +10,7 @@ class HomeController extends Controller
     public function index(): View
     {
         $events = Event::published()
+            ->withSalesStatus()
             ->with('category')
             ->withMin('showtimes', 'base_price')
             ->latest('release_date')

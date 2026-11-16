@@ -44,6 +44,7 @@ Cập nhật file này mỗi khi kiến trúc hoặc yêu cầu dự án thay đ
 | **2026-11-02** | **Drive & Gmail ticket (Plan 9)** | Poster sự kiện upload lên Drive; Gmail API gửi vé, thiếu cấu hình Gmail thì dùng SMTP | Tài khoản Google cá nhân dùng Drive OAuth; Service Account chỉ dùng cho Shared Drive. |
 | **2026-11-03** | **Drive-only images** | Poster sự kiện và avatar mới bắt buộc lưu trên Drive; command `images:migrate-to-drive` chuyển ảnh local/Picsum và giữ file local làm backup. Seeder dùng poster Drive; ảnh được trả qua same-origin proxy | Tester cần OAuth Drive riêng và quyền Editor trên thư mục Drive. |
 | **2026-11-16** | **SePay bank transfer** | Tùy chọn `SEPAY_ENABLED`: checkout tạo booking `pending`, QR chứa mã đơn, giữ ghế tối đa 15 phút; webhook xác thực API key, chiều tiền vào, tài khoản nhận, mã booking và số tiền; ghi transaction ID idempotently; xác nhận đơn, gửi email và trang thanh toán polling tự mở vé. Khi tắt, luồng demo cũ vẫn chạy. | Mở rộng theo yêu cầu mới; cần liên kết tài khoản ngân hàng với SePay và cấu hình webhook công khai HTTPS. |
+| **2026-11-16** | **Trạng thái mở bán sự kiện** | Trạng thái công khai suy ra từ lịch diễn: có suất tương lai → đang mở bán; đang có suất diễn → đang diễn ra; mọi suất đã qua → đã kết thúc; chưa có lịch → chưa có lịch diễn. CTA chỉ ghi “Chọn vé” khi còn suất tương lai. | Trạng thái xuất bản admin (`published`/`archived`/`draft`) được giữ riêng với trạng thái lịch diễn. |
 
 ### 2a. Sơ đồ chỗ ngồi theo khu vực
 

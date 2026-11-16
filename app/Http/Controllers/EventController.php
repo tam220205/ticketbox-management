@@ -26,6 +26,7 @@ class EventController extends Controller
         $categoryId = is_numeric($rawCategory) ? (int) $rawCategory : null;
 
         $events = Event::published()
+            ->withSalesStatus()
             ->with('category')
             ->withMin('showtimes', 'base_price')
             ->when($query !== '', fn ($builder) => $builder->where(function ($where) use ($query) {
@@ -49,6 +50,7 @@ class EventController extends Controller
     public function show(Request $request, string $slug, WeatherService $weatherService): View
     {
         $event = Event::published()
+            ->withSalesStatus()
             ->with('category')
             ->withMin('showtimes', 'base_price')
             ->where('slug', $slug)

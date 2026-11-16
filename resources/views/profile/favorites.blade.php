@@ -81,17 +81,21 @@
                             </div>
 
                             <div class="absolute top-2.5 right-2.5">
-                                @if ($event->status === 'published')
+                                @if ($event->sales_status === 'on_sale')
                                     <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
                                         Đang mở bán
                                     </span>
-                                @elseif ($event->status === 'archived')
+                                @elseif ($event->sales_status === 'ongoing')
+                                    <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                                        Đang diễn ra
+                                    </span>
+                                @elseif (in_array($event->sales_status, ['ended', 'archived'], true))
                                     <span class="px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold border border-gray-200">
-                                        Đã lưu trữ / Ngừng mở bán
+                                        {{ $event->sales_status === 'ended' ? 'Đã kết thúc' : 'Đã lưu trữ / Ngừng mở bán' }}
                                     </span>
                                 @else
                                     <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
-                                        Bản nháp / Tạm ngưng
+                                        Chưa có lịch diễn
                                     </span>
                                 @endif
                             </div>

@@ -87,9 +87,20 @@
 
                                 <div class="p-4 pt-4">
                                     <div class="flex items-center justify-between text-xs text-gray-500 mb-1 font-semibold">
-                                        <span class="text-gold-dark font-bold uppercase tracking-wider text-[10px]">Đang mở bán trực tuyến</span>
+                                        <span class="text-gold-dark font-bold uppercase tracking-wider text-[10px]">
+                                            {{ match ($leadEvent->sales_status) {
+                                                'on_sale' => 'Đang mở bán trực tuyến',
+                                                'ongoing' => 'Sự kiện đang diễn ra',
+                                                'ended' => 'Sự kiện đã kết thúc',
+                                                default => 'Chưa có lịch diễn',
+                                            } }}
+                                        </span>
                                         <span class="text-sage-forest font-bold flex items-center gap-1 text-[11px]">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-sage-forest"></span> Khóa chỗ an toàn 10p
+                                            @if ($leadEvent->sales_status === 'on_sale')
+                                                <span class="w-1.5 h-1.5 rounded-full bg-sage-forest"></span> Khóa chỗ an toàn 10p
+                                            @else
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Thông tin sự kiện
+                                            @endif
                                         </span>
                                     </div>
                                     <h3 class="font-serif font-black text-xl text-black line-clamp-1 group-hover:text-rose-taupe transition-colors">{{ $leadEvent->title }}</h3>
@@ -97,7 +108,7 @@
                                     
                                     <div class="mt-4 pt-3.5 border-t border-black/10 flex items-center justify-end">
                                         <a href="{{ route('movies.show', $leadEvent->slug) }}" class="btn-gold px-5 py-2.5 rounded-xl text-xs font-black shadow-sm flex items-center gap-1.5 hover:shadow-md transition-all">
-                                            <span>Chọn chỗ ngồi</span>
+                                            <span>{{ $leadEvent->sales_status === 'on_sale' ? 'Chọn chỗ ngồi' : 'Xem sự kiện' }}</span>
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                             </svg>

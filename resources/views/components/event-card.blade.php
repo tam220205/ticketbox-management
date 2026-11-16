@@ -2,6 +2,15 @@
 
 @php
     $item = $event ?? $movie;
+    $salesStatus = $item?->sales_status ?? 'unscheduled';
+    $salesBadge = match ($salesStatus) {
+        'on_sale' => ['label' => 'Đang mở bán', 'classes' => 'text-emerald-800', 'dot' => 'bg-emerald-500 animate-pulse'],
+        'ongoing' => ['label' => 'Đang diễn ra', 'classes' => 'text-blue-800', 'dot' => 'bg-blue-500'],
+        'ended' => ['label' => 'Đã kết thúc', 'classes' => 'text-gray-700', 'dot' => 'bg-gray-500'],
+        'archived' => ['label' => 'Ngừng mở bán', 'classes' => 'text-gray-700', 'dot' => 'bg-gray-500'],
+        'draft' => ['label' => 'Chưa công khai', 'classes' => 'text-amber-800', 'dot' => 'bg-amber-500'],
+        default => ['label' => 'Chưa có lịch diễn', 'classes' => 'text-amber-800', 'dot' => 'bg-amber-500'],
+    };
 @endphp
 
 @if ($item)
@@ -42,9 +51,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
             </button>
-            <span class="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md text-emerald-800 text-[10px] font-extrabold flex items-center gap-1.5 shadow-md">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Đang mở bán
+            <span class="px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md {{ $salesBadge['classes'] }} text-[10px] font-extrabold flex items-center gap-1.5 shadow-md">
+                <span class="w-1.5 h-1.5 rounded-full {{ $salesBadge['dot'] }}"></span>
+                {{ $salesBadge['label'] }}
             </span>
         </div>
 
@@ -100,7 +109,7 @@
         <!-- Footer action -->
         <div class="mt-4 pt-3.5 border-t border-black/8 flex items-center justify-end">
             <span class="btn-rose px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm group-hover:shadow-md group-hover:gap-2 transition-all">
-                <span>Chọn vé</span>
+                <span>{{ $salesStatus === 'on_sale' ? 'Chọn vé' : 'Xem sự kiện' }}</span>
                 <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

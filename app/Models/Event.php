@@ -90,6 +90,79 @@ class Event extends Model
         return $query->where('status', 'published');
     }
 
+    public function scopeWithSalesStatus(Builder $query): Builder
+    {
+        $now = now();
+
+        return $query->withExists([
+            'showtimes as has_upcoming_showtimes' => fn (Builder $showtimes) => $showtimes->where('start_time', '>', $now),
+            'showtimes as has_ongoing_showtimes' => fn (Builder $showtimes) => $showtimes
+                ->where('start_time', '<=', $now)
+                ->where('end_time', '>', $now),
+            'showtimes as has_ended_showtimes' => fn (Builder $showtimes) => $showtimes->where(function (Builder $ended) use ($now) {
+                $ended->where('end_time', '<=', $now)
+                    ->orWhere(fn (Builder $withoutEnd) => $withoutEnd
+                        ->whereNull('end_time')
+                        ->where('start_time', '<=', $now));
+            }),
+        ]);
+    }
+
+    public function getSalesStatusAttribute(): string
+    {
+        if ($this->status === 'archived') {
+            return 'archived';
+        }
+        if ($this->status !== 'published') {
+            return 'draft';
+        }
+        if ($this->hasUpcomingShowtimes()) {
+            return 'on_sale';
+        }
+        if ($this->hasOngoingShowtimes()) {
+            return 'ongoing';
+        }
+        if ($this->hasEndedShowtimes()) {
+            return 'ended';
+        }
+
+        return 'unscheduled';
+    }
+
+    public function hasUpcomingShowtimes(): bool
+    {
+        return $this->scheduleFlag('has_upcoming_showtimes', fn () => $this->showtimes()->where('start_time', '>', now())->exists(), fn ($showtime) => $showtime->start_time?->isFuture());
+    }
+
+    public function hasOngoingShowtimes(): bool
+    {
+        return $this->scheduleFlag('has_ongoing_showtimes', fn () => $this->showtimes()
+            ->where('start_time', '<=', now())->where('end_time', '>', now())->exists(), fn ($showtime) => $showtime->start_time?->isPast() && $showtime->end_time?->isFuture());
+    }
+
+    public function hasEndedShowtimes(): bool
+    {
+        return $this->scheduleFlag('has_ended_showtimes', fn () => $this->showtimes()->where(function (Builder $ended) {
+            $ended->where('end_time', '<=', now())
+                ->orWhere(fn (Builder $withoutEnd) => $withoutEnd->whereNull('end_time')->where('start_time', '<=', now()));
+        })->exists(), fn ($showtime) => $showtime->end_time
+            ? $showtime->end_time->isPast()
+            : $showtime->start_time?->isPast());
+    }
+
+    private function scheduleFlag(string $attribute, callable $query, callable $loadedRelation): bool
+    {
+        if (array_key_exists($attribute, $this->attributes)) {
+            return (bool) $this->attributes[$attribute];
+        }
+
+        if ($this->relationLoaded('showtimes')) {
+            return $this->showtimes->contains(fn (Showtime $showtime) => (bool) $loadedRelation($showtime));
+        }
+
+        return (bool) $query();
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

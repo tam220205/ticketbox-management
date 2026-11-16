@@ -76,16 +76,17 @@
                         </div>
                         <div class="flex items-center justify-between text-gray-600 pt-1 border-t border-black/5">
                             <span>Trạng thái phát hành:</span>
-                            @if (!empty($showtimes))
+                            @if ($movie->sales_status === 'on_sale')
                                 <span class="text-sage-forest font-black flex items-center gap-1.5">
                                     <span class="w-2 h-2 rounded-full bg-sage-forest animate-ping"></span>
                                     Đang mở bán trực tuyến
                                 </span>
+                            @elseif ($movie->sales_status === 'ongoing')
+                                <span class="text-blue-700 font-black flex items-center gap-1.5">Đang diễn ra</span>
+                            @elseif ($movie->sales_status === 'ended')
+                                <span class="text-gray-600 font-black flex items-center gap-1.5">Đã kết thúc</span>
                             @else
-                                <span class="text-rose-600 font-bold flex items-center gap-1.5">
-                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                                    Hết hạn / Chưa mở bán
-                                </span>
+                                <span class="text-amber-700 font-bold">Chưa có lịch diễn</span>
                             @endif
                         </div>
                     </div>
@@ -552,7 +553,13 @@
                                     </a>
                                 @empty
                                     <div class="col-span-full bg-[#FAF9F6] rounded-2xl p-8 text-center text-xs text-gray-500 border border-black/5">
-                                        Hiện chưa có suất diễn mở bán cho sự kiện này. Vui lòng quay lại sau!
+                                        @if ($movie->sales_status === 'ended')
+                                            Sự kiện đã kết thúc; hiện không còn suất diễn để đặt vé.
+                                        @elseif ($movie->sales_status === 'ongoing')
+                                            Sự kiện đang diễn ra; hiện không còn mở bán vé.
+                                        @else
+                                            Hiện chưa có suất diễn mở bán cho sự kiện này. Vui lòng quay lại sau!
+                                        @endif
                                     </div>
                                 @endforelse
                             </div>

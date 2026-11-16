@@ -17,6 +17,7 @@ class FavoriteEventController extends Controller
     {
         $favorites = $request->user()
             ->favoriteEvents()
+            ->withSalesStatus()
             ->with(['category', 'showtimes'])
             ->latest('event_user_favorites.created_at')
             ->paginate(12);

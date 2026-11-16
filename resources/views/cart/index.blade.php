@@ -26,11 +26,11 @@
             items: {{ Js::from($jsItems) }},
             userEmail: @js($userEmail),
             bankPayment: @js([
-                'code' => config('services.ticket_payment.bank_code', 'VCB'),
-                'shortName' => config('services.ticket_payment.bank_name', 'Vietcombank'),
-                'fullName' => config('services.ticket_payment.bank_full_name', 'Ngân hàng TMCP Ngoại thương Việt Nam'),
-                'accountNo' => config('services.ticket_payment.account_no', '1040394574'),
-                'accountHolder' => config('services.ticket_payment.account_holder', 'BUI NGOC LAN ANH'),
+                'code' => config('services.ticket_payment.bank_code', 'MB'),
+                'shortName' => config('services.ticket_payment.bank_name', 'MB Bank'),
+                'fullName' => config('services.ticket_payment.bank_full_name', 'Ngân hàng TMCP Quân đội'),
+                'accountNo' => config('services.ticket_payment.account_no'),
+                'accountHolder' => config('services.ticket_payment.account_holder'),
             ]),
             checkoutUrl: @js(route('checkout.store')),
             paymentStatusUrl: @js(route('bookings.payment-status', '__ID__')),
@@ -516,10 +516,10 @@
                                         Đối soát tự động chưa kết nối
                                     </span>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Quét mã hoặc chuyển khoản tới tài khoản <span class="font-bold text-slate-800" x-text="currentBank.shortName">Vietcombank</span> dưới đây:</p>
+                                <p class="text-xs text-gray-500 mt-1">Quét mã hoặc chuyển khoản tới tài khoản <span class="font-bold text-slate-800" x-text="currentBank.shortName">MB Bank</span> dưới đây:</p>
 
                                 <!-- Bank Selector Pills -->
-                                <span class="inline-flex mt-3 px-3.5 py-1.5 rounded-xl text-xs font-black border border-emerald-600 bg-emerald-50 text-emerald-800" x-text="currentBank.shortName">Vietcombank</span>
+                                <span class="inline-flex mt-3 px-3.5 py-1.5 rounded-xl text-xs font-black border border-emerald-600 bg-emerald-50 text-emerald-800" x-text="currentBank.shortName">MB Bank</span>
                             </div>
 
                             <!-- Account Details Table -->

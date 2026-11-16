@@ -68,13 +68,13 @@ return [
     ],
 
     'ticket_payment' => [
-        'bank_code' => env('BANK_CODE', 'VCB'),
-        'bank_name' => env('BANK_NAME', 'Vietcombank'),
-        'bank_full_name' => env('BANK_FULL_NAME', 'Ngân hàng TMCP Ngoại thương Việt Nam'),
-        'account_no' => env('BANK_ACCOUNT_NO', env('MB_ACCOUNT_NO', '1040394574')),
-        'account_holder' => env('BANK_ACCOUNT_HOLDER', env('MB_ACCOUNT_HOLDER', 'BUI NGOC LAN ANH')),
-        'mb_account_no' => env('MB_ACCOUNT_NO', '1040394574'),
-        'mb_account_holder' => env('MB_ACCOUNT_HOLDER', 'BUI NGOC LAN ANH'),
+        'bank_code' => env('BANK_CODE', 'MB'),
+        'bank_name' => env('BANK_NAME', 'MB Bank'),
+        'bank_full_name' => env('BANK_FULL_NAME', 'Ngân hàng TMCP Quân đội'),
+        'account_no' => env('BANK_ACCOUNT_NO', env('MB_ACCOUNT_NO')),
+        'account_holder' => env('BANK_ACCOUNT_HOLDER', env('MB_ACCOUNT_HOLDER')),
+        'mb_account_no' => env('MB_ACCOUNT_NO'),
+        'mb_account_holder' => env('MB_ACCOUNT_HOLDER'),
     ],
 
     'sepay' => [

@@ -484,49 +484,47 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
             return;
         }
 
-        if (this.sepayEnabled) {
-            if (this.selectedMethod !== 'vietqr') {
-                this.notify('Hiện chỉ hỗ trợ chuyển khoản VietQR tự động.');
-                return;
-            }
-            if (this.pendingBookingId) {
-                this.step = 'payment_qr';
-                this.startPaymentPolling();
-                return;
-            }
-
-            this.isProcessingPayment = true;
-            try {
-                const response = await fetch(config.checkoutUrl, {
-                    method: 'POST',
-                    headers: jsonHeaders(),
-                    body: JSON.stringify({
-                        payment_method: 'vietqr',
-                        delivery_email: this.buyerInfo.email.trim(),
-                    }),
-                });
-                const data = await response.json();
-                if (!response.ok) {
-                    this.notify(data.message || 'Không thể tạo yêu cầu thanh toán.');
-                    return;
-                }
-
-                this.pendingBookingId = data.booking_id;
-                this.orderCode = data.booking_code;
-                this.totalAmount = Number(data.total_price);
-                this.step = 'payment_qr';
-                this.notify(data.message);
-                this.startPaymentPolling();
-            } catch (error) {
-                this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
-            } finally {
-                this.isProcessingPayment = false;
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!this.sepayEnabled) {
+            this.notify('Thanh toán chưa khả dụng: chưa cấu hình xác nhận giao dịch SePay.');
+            return;
+        }
+        if (this.selectedMethod !== 'vietqr') {
+            this.notify('Hiện chỉ hỗ trợ chuyển khoản VietQR tự động.');
+            return;
+        }
+        if (this.pendingBookingId) {
+            this.step = 'payment_qr';
+            this.startPaymentPolling();
             return;
         }
 
-        this.step = 'payment_qr';
+        this.isProcessingPayment = true;
+        try {
+            const response = await fetch(config.checkoutUrl, {
+                method: 'POST',
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    payment_method: 'vietqr',
+                    delivery_email: this.buyerInfo.email.trim(),
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                this.notify(data.message || 'Không thể tạo yêu cầu thanh toán.');
+                return;
+            }
+
+            this.pendingBookingId = data.booking_id;
+            this.orderCode = data.booking_code;
+            this.totalAmount = Number(data.total_price);
+            this.step = 'payment_qr';
+            this.notify(data.message);
+            this.startPaymentPolling();
+        } catch (error) {
+            this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
+        } finally {
+            this.isProcessingPayment = false;
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
@@ -537,52 +535,6 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
         }
         this.step = 'cart';
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-
-    async simulatePaymentSuccess() {
-        if (this.isProcessingPayment || this.paymentSuccess) return;
-
-        if (this.sepayEnabled) {
-            await this.checkPaymentStatus();
-            return;
-        }
-
-        if (this.selectedMethod === 'momo') {
-            this.notify('MoMo chưa được kết nối. Hiện chưa thể xác nhận thanh toán MoMo.');
-            return;
-        }
-
-        this.isProcessingPayment = true;
-        this.notify('Đang kiểm tra và xác nhận giao dịch thanh toán...');
-
-        try {
-            const response = await fetch(config.checkoutUrl, {
-                method: 'POST',
-                headers: jsonHeaders(),
-                body: JSON.stringify({
-                    payment_method: this.selectedMethod,
-                    delivery_email: this.buyerInfo.email.trim(),
-                }),
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                this.notify(data.message || 'Thanh toán thất bại, vui lòng thử lại.');
-                return;
-            }
-
-            this.orderCode = data.booking_code;
-            this.ticketQrDataUri = data.qr_data_uri;
-            this.ticketQrSvg = data.qr_data_uri ? atob(data.qr_data_uri.split(',')[1]) : '';
-            this.paymentSuccess = true;
-            this.step = 'e_ticket';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            this.notify(data.message);
-        } catch (error) {
-            this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
-        } finally {
-            this.isProcessingPayment = false;
-        }
     },
 
     startPaymentPolling() {

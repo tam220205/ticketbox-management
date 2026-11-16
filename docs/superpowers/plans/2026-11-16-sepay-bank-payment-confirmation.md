@@ -6,7 +6,7 @@ Replace the real-money VietQR checkout demo with an optional SePay bank webhook 
 
 ## Scope
 
-- Keep the existing mock checkout available when `SEPAY_ENABLED=false`.
+- Block checkout when `SEPAY_ENABLED=false`; never treat a user click as proof of payment.
 - When enabled, create a pending booking and reserve its seats before displaying the order-specific VietQR.
 - Authenticate SePay webhook requests with an API key, persist transaction IDs idempotently, and confirm only exact incoming payments.
 - Add authenticated payment-status polling for the checkout screen.

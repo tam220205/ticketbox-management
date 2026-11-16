@@ -13,7 +13,7 @@ Cập nhật file này mỗi khi kiến trúc hoặc yêu cầu dự án thay đ
   - **Database & Backend Models (Phase 1)**: Đã hoàn tất 10 migration files (`users`, `categories`, `movies`/`events`, `rooms`/`venues`, `seats`, `showtimes`, `showtime_seats`, `bookings`, `booking_items`, `comments`) cùng 10 Eloquent Models có quan hệ chặt chẽ.
   - **Quản lý Tài khoản Người Dùng (Admin User Management)**: `UserController` xử lý tìm kiếm đa năng (Tên/Email/SĐT), lọc theo Role (Admin/User), lọc theo Trạng thái (Active/Locked), phân trang (Pagination), và AJAX Toggle Khóa/Mở khóa tài khoản bảo mật kèm hộp thoại xác nhận.
   - **Admin CRUD (Plan 1)**: danh mục, sự kiện (upload poster), suất diễn (chặn trùng giờ, tự sinh ghế theo suất), bảo vệ khán phòng có vé bán ra.
-  - **Engine đặt vé (Plan 3)**: giữ ghế AJAX chống đặt trùng, giỏ vé, thanh toán giả lập, lịch sử — đã bỏ hoàn toàn dữ liệu giả DemoCatalog.
+  - **Engine đặt vé (Plan 3)**: giữ ghế AJAX chống đặt trùng, giỏ vé, lịch sử; checkout demo hoặc xác nhận chuyển khoản tự động qua SePay khi bật cấu hình.
   - **Giao diện & Trải nghiệm (Luxury Light Theme)**: Hoàn thiện hệ thống giao diện tone sáng sang trọng với bảng màu tương phản cao `#000000`, `#F5F5DC`, `#FFFFFF`, `#C08497`, `#D4AF37`, `#3A5A40`, `#CC0000`.
 
 ---
@@ -43,6 +43,7 @@ Cập nhật file này mỗi khi kiến trúc hoặc yêu cầu dự án thay đ
 | **2026-10-26** | **Phạm vi thời tiết** | Hiển thị cho mọi địa điểm có tọa độ, không chỉ sự kiện ngoài trời | Chưa có cờ trong nhà/ngoài trời; thêm cờ là mở rộng phạm vi. |
 | **2026-11-02** | **Drive & Gmail ticket (Plan 9)** | Poster sự kiện upload lên Drive; Gmail API gửi vé, thiếu cấu hình Gmail thì dùng SMTP | Tài khoản Google cá nhân dùng Drive OAuth; Service Account chỉ dùng cho Shared Drive. |
 | **2026-11-03** | **Drive-only images** | Poster sự kiện và avatar mới bắt buộc lưu trên Drive; command `images:migrate-to-drive` chuyển ảnh local/Picsum và giữ file local làm backup. Seeder dùng poster Drive; ảnh được trả qua same-origin proxy | Tester cần OAuth Drive riêng và quyền Editor trên thư mục Drive. |
+| **2026-11-16** | **SePay bank transfer** | Tùy chọn `SEPAY_ENABLED`: checkout tạo booking `pending`, QR chứa mã đơn, giữ ghế tối đa 15 phút; webhook xác thực API key, chiều tiền vào, tài khoản nhận, mã booking và số tiền; ghi transaction ID idempotently; xác nhận đơn, gửi email và trang thanh toán polling tự mở vé. Khi tắt, luồng demo cũ vẫn chạy. | Mở rộng theo yêu cầu mới; cần liên kết tài khoản ngân hàng với SePay và cấu hình webhook công khai HTTPS. |
 
 ### 2a. Sơ đồ chỗ ngồi theo khu vực
 
@@ -69,6 +70,13 @@ seats(+ zone_id, + pos_col)   -- pos_col = vị trí ô trong hàng; ô trống 
 - **Gửi vé**: `CheckoutService` queue `BookingConfirmationMail` sau transaction tạo booking. Email theo giao diện TicketBox hiển thị biên lai và danh sách vé; đính kèm riêng PDF biên lai A5 dọc và PDF vé A5 ngang có QR theo `booking_code`. `QUEUE_CONNECTION=database` cần chạy `php artisan queue:work`; `sync` gửi ngay trong request checkout.
 - **Gmail**: transport `gmail_api` gửi MIME message bằng Gmail API với scope `gmail.send` và `GMAIL_OAUTH_REFRESH_TOKEN`. `MAIL_MAILER=gmail_api` dùng Gmail API khi đủ credential; cấu hình thiếu thì transport dùng SMTP từ `mail.mailers.smtp`. Địa chỉ `MAIL_FROM_ADDRESS` nên trùng `GMAIL_SENDER_EMAIL`.
 - **Biến môi trường**: xem `.env.example` cho `GOOGLE_DRIVE_*`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GMAIL_API_*`, `GMAIL_OAUTH_*` và cấu hình SMTP. Không commit Service Account JSON, OAuth client secret hay refresh token.
+
+### 2c. SePay bank-transfer confirmation
+
+- Tắt mặc định (`SEPAY_ENABLED=false`), giữ checkout demo hiện tại. Khi bật, chỉ VietQR được hỗ trợ; server tạo booking `pending`, chuyển ghế sang `booked` để giữ chỗ, và đặt hạn thanh toán theo `SEPAY_PAYMENT_TIMEOUT_MINUTES`.
+- QR chứa `booking_code` trong nội dung chuyển khoản. SePay gọi `POST /webhooks/sepay`; endpoint yêu cầu header `Authorization: Apikey <SEPAY_WEBHOOK_API_KEY>` (hoặc `X-SePay-Api-Key`) và chỉ xác nhận giao dịch tiền vào đúng tài khoản, đúng mã đơn, đúng số tiền, còn hạn. ID giao dịch được lưu duy nhất để chống webhook lặp.
+- Trang checkout poll `GET /bookings/{id}/payment-status`; đơn hợp lệ tự mở trang vé sau khi webhook cập nhật `confirmed`. `payments:expire-unpaid` hủy đơn hết hạn và giải phóng ghế; scheduler phải chạy mỗi phút (`php artisan schedule:work` ở local hoặc cron Laravel scheduler ở production).
+- `.env`: `SEPAY_ENABLED=true`, `SEPAY_WEBHOOK_API_KEY`, `SEPAY_PAYMENT_TIMEOUT_MINUTES`, và thông tin tài khoản nhận VietQR (`BANK_CODE`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_HOLDER`). Dùng HTTPS URL công khai của server để khai báo webhook trong SePay; localhost không nhận được callback từ SePay. Giao dịch đến muộn/sai tài khoản/sai số tiền được lưu là không khớp và không tự phát hành vé.
 
 ---
 

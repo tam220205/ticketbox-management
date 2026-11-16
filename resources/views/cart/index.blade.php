@@ -33,6 +33,8 @@
                 'accountHolder' => config('services.ticket_payment.account_holder', 'BUI NGOC LAN ANH'),
             ]),
             checkoutUrl: @js(route('checkout.store')),
+            paymentStatusUrl: @js(route('bookings.payment-status', '__ID__')),
+            sepayEnabled: @js((bool) config('services.sepay.enabled')),
             removeUrl: @js(route('cart.seats.destroy', '__ID__')),
         })"
     >
@@ -250,7 +252,7 @@
                                     </svg>
                                     <span>Chọn Phương Thức Thanh Toán</span>
                                 </h3>
-                                <p class="text-xs text-gray-500 mt-1">Chuyển khoản VietQR 24/7 và Ví điện tử. Đối soát tự động sẽ hoạt động sau khi kết nối cổng thanh toán.</p>
+                                <p class="text-xs text-gray-500 mt-1" x-text="sepayEnabled ? 'Chuyển khoản VietQR sẽ được xác nhận tự động khi ngân hàng báo tiền vào.' : 'Chế độ demo: xác nhận thanh toán chưa kết nối với giao dịch ngân hàng thật.'"></p>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
@@ -265,12 +267,13 @@
                                             <span class="font-display font-black text-xs text-black">Chuyển Khoản VietQR 24/7</span>
                                             <span class="badge-gold text-[9px] px-2 py-0.2 rounded-full font-bold">Khuyên Dùng</span>
                                         </div>
-                                        <p class="text-[11px] text-gray-500 mt-1">Quét VietQR để chuyển khoản tới tài khoản Vietcombank.</p>
+                                        <p class="text-[11px] text-gray-500 mt-1" x-text="`Quét VietQR tới tài khoản ${currentBank.shortName}.`"></p>
                                     </div>
                                 </label>
 
                                 <!-- Option 2: MoMo -->
                                 <label 
+                                    x-show="!sepayEnabled"
                                     class="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5"
                                     :class="selectedMethod === 'momo' ? 'border-[#A50064] bg-[#FDE8EE]/50 shadow-sm' : 'border-black/10 bg-[#FAF9F6] hover:border-black/20'"
                                 >
@@ -285,6 +288,7 @@
 
                                 <!-- Option 3: ZaloPay -->
                                 <label 
+                                    x-show="!sepayEnabled"
                                     class="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5"
                                     :class="selectedMethod === 'zalopay' ? 'border-[#008FE5] bg-[#EBF5FB]/50 shadow-sm' : 'border-black/10 bg-[#FAF9F6] hover:border-black/20'"
                                 >
@@ -299,6 +303,7 @@
 
                                 <!-- Option 4: Thẻ Quốc Tế / Thẻ Nội Địa -->
                                 <label 
+                                    x-show="!sepayEnabled"
                                     class="p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5"
                                     :class="selectedMethod === 'card' ? 'border-slate-800 bg-slate-100 shadow-sm' : 'border-black/10 bg-[#FAF9F6] hover:border-black/20'"
                                 >
@@ -393,8 +398,8 @@
                                         </div>
                                         <span>Phương thức:</span>
                                     </div>
-                                    <span class="font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-xl text-xs inline-flex items-center gap-1.5 shadow-2xs whitespace-nowrap" x-text="selectedMethod === 'vietqr' ? '🏦 Chuyển khoản Vietcombank' : '🟣 Ví MoMo'">
-                                        🏦 Chuyển khoản Vietcombank
+                                    <span class="font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-xl text-xs inline-flex items-center gap-1.5 shadow-2xs whitespace-nowrap" x-text="selectedMethod === 'vietqr' ? `🏦 Chuyển khoản ${currentBank.shortName}` : '🟣 Ví MoMo'">
+                                        🏦 Chuyển khoản VietQR
                                     </span>
                                 </div>
                             </div>
@@ -696,7 +701,7 @@
                             <!-- High-Fidelity Clickable QR Card (VietQR) -->
                             <div 
                                 x-show="selectedMethod === 'vietqr'"
-                                @click="simulatePaymentSuccess()"
+                                @click="sepayEnabled ? checkPaymentStatus() : simulatePaymentSuccess()"
                                 class="cursor-pointer group relative mx-auto p-4 bg-[#FAF9F6] rounded-2xl border border-black/10 hover:border-gold-dark hover:shadow-lg transition-all"
                             >
                                 <!-- Real VietQR Image with high crispness -->
@@ -709,6 +714,7 @@
                                     >
                                 </div>
                                 <p class="text-[11px] text-gray-500 mt-2 font-medium">Quét mã bằng ứng dụng Ngân hàng của bạn</p>
+                                <p x-show="sepayEnabled" class="text-[11px] text-emerald-800 mt-2 font-semibold">Nội dung chuyển khoản: <span class="font-mono" x-text="orderCode"></span>. Trang sẽ tự cập nhật sau khi nhận tiền.</p>
                             </div>
 
                             <!-- MoMo QR Card -->
@@ -727,7 +733,7 @@
                                 <svg class="w-4 h-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span>Xác nhận mô phỏng (demo)</span>
+                                <span x-text="sepayEnabled ? 'Kiểm tra trạng thái thanh toán' : 'Xác nhận mô phỏng (demo)'"></span>
                             </button>
                         </div>
 

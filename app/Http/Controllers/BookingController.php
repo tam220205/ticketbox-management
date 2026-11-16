@@ -15,6 +15,20 @@ use Throwable;
 
 class BookingController extends Controller
 {
+    public function paymentStatus(Request $request, Booking $booking): JsonResponse
+    {
+        abort_unless($booking->user_id === $request->user()->id, 404);
+
+        return response()->json([
+            'status' => $booking->status,
+            'paid' => $booking->status === 'confirmed',
+            'expired' => $booking->status === 'cancelled'
+                || ($booking->status === 'pending' && $booking->payment_expires_at?->isPast()),
+            'payment_expires_at' => $booking->payment_expires_at?->toIso8601String(),
+            'ticket_url' => $booking->status === 'confirmed' ? route('bookings.ticket', $booking->id) : null,
+        ]);
+    }
+
     public function history(Request $request): View
     {
         $bookings = $request->user()->bookings()

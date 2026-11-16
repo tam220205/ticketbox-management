@@ -415,6 +415,9 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
     },
     ticketQrDataUri: '',
     ticketQrSvg: '',
+    sepayEnabled: Boolean(config.sepayEnabled),
+    pendingBookingId: null,
+    paymentPollTimer: null,
     banks: {
         VCB: {
             code: config.bankPayment?.code || 'VCB',
@@ -475,22 +478,74 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
         this.notify(`Đã sao chép ${label}: ${text}`);
     },
 
-    proceedToPayment() {
+    async proceedToPayment() {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.buyerInfo.email.trim())) {
             this.notify('Vui lòng nhập email hợp lệ để nhận vé điện tử.');
             return;
         }
+
+        if (this.sepayEnabled) {
+            if (this.selectedMethod !== 'vietqr') {
+                this.notify('Hiện chỉ hỗ trợ chuyển khoản VietQR tự động.');
+                return;
+            }
+            if (this.pendingBookingId) {
+                this.step = 'payment_qr';
+                this.startPaymentPolling();
+                return;
+            }
+
+            this.isProcessingPayment = true;
+            try {
+                const response = await fetch(config.checkoutUrl, {
+                    method: 'POST',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({
+                        payment_method: 'vietqr',
+                        delivery_email: this.buyerInfo.email.trim(),
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    this.notify(data.message || 'Không thể tạo yêu cầu thanh toán.');
+                    return;
+                }
+
+                this.pendingBookingId = data.booking_id;
+                this.orderCode = data.booking_code;
+                this.totalAmount = Number(data.total_price);
+                this.step = 'payment_qr';
+                this.notify(data.message);
+                this.startPaymentPolling();
+            } catch (error) {
+                this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
+            } finally {
+                this.isProcessingPayment = false;
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         this.step = 'payment_qr';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     backToCart() {
+        if (this.sepayEnabled && this.pendingBookingId) {
+            this.notify('Đơn đang chờ thanh toán. Hãy hoàn tất chuyển khoản hoặc chờ hết hạn.');
+            return;
+        }
         this.step = 'cart';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     async simulatePaymentSuccess() {
         if (this.isProcessingPayment || this.paymentSuccess) return;
+
+        if (this.sepayEnabled) {
+            await this.checkPaymentStatus();
+            return;
+        }
 
         if (this.selectedMethod === 'momo') {
             this.notify('MoMo chưa được kết nối. Hiện chưa thể xác nhận thanh toán MoMo.');
@@ -527,6 +582,35 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
             this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
         } finally {
             this.isProcessingPayment = false;
+        }
+    },
+
+    startPaymentPolling() {
+        if (!this.sepayEnabled || !this.pendingBookingId) return;
+        if (this.paymentPollTimer) clearInterval(this.paymentPollTimer);
+        this.checkPaymentStatus();
+        this.paymentPollTimer = setInterval(() => this.checkPaymentStatus(), 3000);
+    },
+
+    async checkPaymentStatus() {
+        if (!this.pendingBookingId || !config.paymentStatusUrl) return;
+        try {
+            const response = await fetch(config.paymentStatusUrl.replace('__ID__', this.pendingBookingId), {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.paid && data.ticket_url) {
+                if (this.paymentPollTimer) clearInterval(this.paymentPollTimer);
+                this.paymentSuccess = true;
+                this.notify('Đã nhận thanh toán. Đang mở vé điện tử...');
+                setTimeout(() => { window.location.href = data.ticket_url; }, 700);
+            } else if (data.expired) {
+                if (this.paymentPollTimer) clearInterval(this.paymentPollTimer);
+                this.notify('Đơn thanh toán đã hết hạn. Vui lòng đặt vé lại.');
+            }
+        } catch (error) {
+            // Keep polling; a brief network failure must not cancel a pending payment.
         }
     },
 

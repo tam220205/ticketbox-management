@@ -23,11 +23,15 @@ class Booking extends Model
         'buyer_name',
         'buyer_phone',
         'buyer_email',
+        'payment_expires_at',
+        'paid_at',
     ];
 
     protected $casts = [
         'total_price' => 'integer',
         'discount_amount' => 'integer',
+        'payment_expires_at' => 'datetime',
+        'paid_at' => 'datetime',
     ];
 
     protected static function boot()

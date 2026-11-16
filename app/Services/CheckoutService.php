@@ -128,4 +128,101 @@ class CheckoutService
 
         return $booking;
     }
+
+    /** Create an unpaid bank-transfer booking and reserve its seats until the payment deadline. */
+    public function startBankTransfer(
+        User $user,
+        string $deliveryEmail,
+        ?string $deliveryName = null,
+        ?string $deliveryPhone = null,
+        ?string $discountCode = null,
+        ?array $expectedSeatIds = null
+    ): Booking {
+        $booking = DB::transaction(function () use ($user, $deliveryEmail, $deliveryName, $deliveryPhone, $discountCode, $expectedSeatIds) {
+            $expiredSeats = ShowtimeSeat::where('held_by_user_id', $user->id)
+                ->where('status', 'held')
+                ->where('held_until', '<=', now())
+                ->lockForUpdate()
+                ->get();
+
+            if ($expiredSeats->isNotEmpty()) {
+                throw new SeatHoldException('Một hoặc nhiều ghế trong giỏ vé đã hết thời gian giữ chỗ. Vui lòng chọn lại.');
+            }
+
+            $query = ShowtimeSeat::heldBy($user)->with(['seat.zone', 'showtime'])->lockForUpdate();
+            if (! empty($expectedSeatIds)) {
+                $query->whereIn('id', $expectedSeatIds);
+            }
+            $seats = $query->get();
+
+            if ($seats->isEmpty()) {
+                throw new SeatHoldException('Giỏ vé trống hoặc đã hết thời gian giữ chỗ. Vui lòng chọn lại ghế.');
+            }
+            if (! empty($expectedSeatIds) && $seats->count() !== count($expectedSeatIds)) {
+                throw new SeatHoldException('Một hoặc nhiều ghế đã không còn khả dụng hoặc bị hủy giữ chỗ. Vui lòng chọn lại.');
+            }
+
+            $priceOf = fn (ShowtimeSeat $seat) => $seat->price_override ?? $seat->effective_price;
+            $subtotal = (int) $seats->sum($priceOf);
+            $discountCodeToApply = $discountCode ?? session('applied_discount.code');
+            $discount = $discountCodeToApply
+                ? Discount::where('code', strtoupper(trim($discountCodeToApply)))->lockForUpdate()->first()
+                : null;
+            $discountId = null;
+            $discountAmount = 0;
+            if ($discount && $discount->isValidForOrder($subtotal)) {
+                $discountAmount = $discount->calculateDiscount($subtotal);
+                $discountId = $discount->id;
+                $discount->increment('used_count');
+            }
+
+            $totalPrice = max(0, $subtotal - $discountAmount);
+            $booking = Booking::create([
+                'user_id' => $user->id,
+                'total_price' => $totalPrice,
+                'discount_id' => $discountId,
+                'discount_amount' => $discountAmount,
+                'status' => $totalPrice === 0 ? 'confirmed' : 'pending',
+                'payment_method' => 'vietqr',
+                'buyer_name' => $deliveryName ?? $user->name,
+                'buyer_phone' => $deliveryPhone ?? $user->phone,
+                'buyer_email' => $deliveryEmail,
+                'payment_expires_at' => $totalPrice === 0
+                    ? null
+                    : now()->addMinutes(max(5, min(60, (int) config('services.sepay.payment_timeout_minutes', 15)))),
+                'paid_at' => $totalPrice === 0 ? now() : null,
+            ]);
+
+            foreach ($seats as $seat) {
+                $booking->items()->create([
+                    'showtime_seat_id' => $seat->id,
+                    'price' => $priceOf($seat),
+                ]);
+                $seat->update([
+                    'status' => 'booked',
+                    'held_by_user_id' => null,
+                    'held_until' => null,
+                ]);
+            }
+
+            if (session()->has('applied_discount')) {
+                session()->forget('applied_discount');
+            }
+
+            return $booking;
+        });
+
+        if ($booking->status === 'confirmed') {
+            try {
+                Mail::to($booking->buyer_email)->queue(new BookingConfirmationMail($booking));
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::warning('Could not queue no-payment booking confirmation email.', [
+                    'booking_id' => $booking->id,
+                    'exception' => $exception::class,
+                ]);
+            }
+        }
+
+        return $booking;
+    }
 }

@@ -77,4 +77,10 @@ return [
         'mb_account_holder' => env('MB_ACCOUNT_HOLDER', 'BUI NGOC LAN ANH'),
     ],
 
+    'sepay' => [
+        'enabled' => env('SEPAY_ENABLED', false),
+        'webhook_api_key' => env('SEPAY_WEBHOOK_API_KEY'),
+        'payment_timeout_minutes' => env('SEPAY_PAYMENT_TIMEOUT_MINUTES', 15),
+    ],
+
 ];

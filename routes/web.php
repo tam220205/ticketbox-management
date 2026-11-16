@@ -23,6 +23,7 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchSuggestionController;
+use App\Http\Controllers\SePayWebhookController;
 use App\Http\Controllers\SeatHoldController;
 use App\Http\Controllers\ShowtimeController;
 use App\Http\Controllers\UserAvatarController;
@@ -46,6 +47,9 @@ Route::get('/search/suggestions', SearchSuggestionController::class)
 Route::get('/movies', [EventController::class, 'index'])->name('movies.index');
 Route::get('/movies/{slug}', [EventController::class, 'show'])->name('movies.show');
 Route::get('/showtimes/{showtime}/seat-status', [ShowtimeController::class, 'seatStatus'])->name('showtimes.seat-status');
+Route::post('/webhooks/sepay', SePayWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.sepay');
 
 Route::middleware('auth')->group(function () {
     Route::get('/showtimes/{showtime}/seats', [ShowtimeController::class, 'seats'])->name('showtimes.seats');
@@ -59,6 +63,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:10,1')
         ->name('checkout.store');
     Route::get('/bookings', [BookingController::class, 'history'])->name('bookings.history');
+    Route::get('/bookings/{booking}/payment-status', [BookingController::class, 'paymentStatus'])
+        ->name('bookings.payment-status');
     Route::get('/bookings/{booking}/ticket', [BookingController::class, 'ticket'])->name('bookings.ticket');
     Route::get('/bookings/{booking}/ticket/pdf', [BookingController::class, 'ticketPdf'])->name('bookings.ticket.pdf');
     Route::post('/bookings/{booking}/ticket/email', [BookingController::class, 'sendTicketEmail'])->name('bookings.ticket.email');

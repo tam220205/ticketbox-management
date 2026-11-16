@@ -83,4 +83,8 @@ return [
         'payment_timeout_minutes' => env('SEPAY_PAYMENT_TIMEOUT_MINUTES', 15),
     ],
 
+    'ticket_payment_demo' => [
+        'enabled' => env('PAYMENT_DEMO_MODE', false),
+    ],
+
 ];

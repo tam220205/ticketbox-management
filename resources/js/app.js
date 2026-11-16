@@ -416,6 +416,7 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
     ticketQrDataUri: '',
     ticketQrSvg: '',
     sepayEnabled: Boolean(config.sepayEnabled),
+    demoPaymentsEnabled: Boolean(config.demoPaymentsEnabled),
     pendingBookingId: null,
     paymentPollTimer: null,
     banks: {
@@ -484,6 +485,13 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
             return;
         }
 
+        if (this.demoPaymentsEnabled) {
+            this.step = 'payment_qr';
+            this.notify('Đang ở chế độ demo. Bấm nút xác nhận mô phỏng để thử luồng; không chuyển tiền thật.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         if (!this.sepayEnabled) {
             this.notify('Thanh toán chưa khả dụng: chưa cấu hình xác nhận giao dịch SePay.');
             return;
@@ -535,6 +543,37 @@ Alpine.data('ticketPaymentManager', (config = {}) => ({
         }
         this.step = 'cart';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    async simulatePaymentSuccess() {
+        if (this.isProcessingPayment) return;
+        if (!this.demoPaymentsEnabled) {
+            if (this.sepayEnabled) await this.checkPaymentStatus();
+            return;
+        }
+
+        this.isProcessingPayment = true;
+        try {
+            const response = await fetch(config.checkoutUrl, {
+                method: 'POST',
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    payment_method: this.selectedMethod,
+                    delivery_email: this.buyerInfo.email.trim(),
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                this.notify(data.message || 'Không thể xác nhận thanh toán mô phỏng.');
+                return;
+            }
+            this.notify(data.message);
+            if (data.redirect) window.location.href = data.redirect;
+        } catch (error) {
+            this.notify('Mất kết nối tới máy chủ, vui lòng thử lại.');
+        } finally {
+            this.isProcessingPayment = false;
+        }
     },
 
     startPaymentPolling() {

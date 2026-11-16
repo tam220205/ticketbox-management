@@ -35,6 +35,7 @@
             checkoutUrl: @js(route('checkout.store')),
             paymentStatusUrl: @js(route('bookings.payment-status', '__ID__')),
             sepayEnabled: @js((bool) config('services.sepay.enabled')),
+            demoPaymentsEnabled: @js((bool) config('services.ticket_payment_demo.enabled') && app()->environment(['local', 'testing'])),
             removeUrl: @js(route('cart.seats.destroy', '__ID__')),
         })"
     >
@@ -252,7 +253,7 @@
                                     </svg>
                                     <span>Chọn Phương Thức Thanh Toán</span>
                                 </h3>
-                                <p class="text-xs text-gray-500 mt-1" x-text="sepayEnabled ? 'Chuyển khoản VietQR sẽ được xác nhận tự động khi ngân hàng báo tiền vào.' : 'Thanh toán đang tạm khóa vì chưa cấu hình SePay; hệ thống chưa thể xác nhận giao dịch.'"></p>
+                                <p class="text-xs text-gray-500 mt-1" x-text="demoPaymentsEnabled ? 'Chế độ demo: xác nhận mô phỏng, không kiểm tra giao dịch ngân hàng thật.' : (sepayEnabled ? 'Chuyển khoản VietQR sẽ được xác nhận tự động khi ngân hàng báo tiền vào.' : 'Thanh toán đang tạm khóa vì chưa cấu hình SePay; hệ thống chưa thể xác nhận giao dịch.')"></p>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
@@ -425,11 +426,11 @@
                             <button 
                                 type="button" 
                                 @click="proceedToPayment()"
-                                :disabled="!sepayEnabled || isProcessingPayment"
-                                :class="!sepayEnabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
+                                :disabled="(!sepayEnabled && !demoPaymentsEnabled) || isProcessingPayment"
+                                :class="(!sepayEnabled && !demoPaymentsEnabled) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
                                 class="w-full py-4 px-6 rounded-2xl bg-[#C08497] hover:bg-[#A96B7E] text-white font-black text-base shadow-xl shadow-[#C08497]/30 hover:shadow-[#C08497]/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-3 group whitespace-nowrap disabled:hover:translate-y-0 disabled:hover:shadow-xl"
                             >
-                                <span x-text="sepayEnabled ? 'Tiến Hành Thanh Toán' : 'Thanh toán chưa khả dụng'"></span>
+                                <span x-text="demoPaymentsEnabled ? 'Tiếp tục (demo)' : (sepayEnabled ? 'Tiến Hành Thanh Toán' : 'Thanh toán chưa khả dụng')"></span>
                                 <span class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
                                     <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -703,7 +704,7 @@
                             <!-- High-Fidelity Clickable QR Card (VietQR) -->
                             <div 
                                 x-show="selectedMethod === 'vietqr'"
-                                @click="checkPaymentStatus()"
+                                @click="demoPaymentsEnabled ? null : checkPaymentStatus()"
                                 class="cursor-pointer group relative mx-auto p-4 bg-[#FAF9F6] rounded-2xl border border-black/10 hover:border-gold-dark hover:shadow-lg transition-all"
                             >
                                 <!-- Real VietQR Image with high crispness -->
@@ -729,13 +730,13 @@
                             <!-- Primary Action Button -->
                             <button 
                                 type="button" 
-                                @click="checkPaymentStatus()"
+                                @click="simulatePaymentSuccess()"
                                 class="btn-sage w-full py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
                             >
                                 <svg class="w-4 h-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span x-text="sepayEnabled ? 'Kiểm tra trạng thái thanh toán' : 'Thanh toán chưa khả dụng'"></span>
+                                <span x-text="demoPaymentsEnabled ? 'Xác nhận mô phỏng (demo)' : (sepayEnabled ? 'Kiểm tra trạng thái thanh toán' : 'Thanh toán chưa khả dụng')"></span>
                             </button>
                         </div>
 

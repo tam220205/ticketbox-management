@@ -11,6 +11,28 @@ class CheckoutController extends Controller
 {
     public function store(CheckoutRequest $request, CheckoutService $checkout): JsonResponse
     {
+        if (config('services.ticket_payment_demo.enabled') && app()->environment(['local', 'testing'])) {
+            try {
+                $booking = $checkout->checkout(
+                    $request->user(),
+                    $request->validated('payment_method'),
+                    $request->validated('delivery_email'),
+                    $request->validated('delivery_name'),
+                    $request->validated('delivery_phone'),
+                    $request->input('discount_code'),
+                    $request->input('seat_ids'),
+                );
+            } catch (SeatHoldException $exception) {
+                return response()->json(['message' => $exception->getMessage()], 422);
+            }
+
+            return response()->json([
+                'message' => 'Thanh toán mô phỏng thành công. Không có giao dịch ngân hàng thật.',
+                'status' => $booking->status,
+                'redirect' => route('bookings.ticket', $booking->id),
+            ]);
+        }
+
         if (! config('services.sepay.enabled')) {
             return response()->json([
                 'message' => 'Thanh toán chưa khả dụng: chưa cấu hình xác nhận giao dịch SePay.',

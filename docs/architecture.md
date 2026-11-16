@@ -78,6 +78,7 @@ seats(+ zone_id, + pos_col)   -- pos_col = vị trí ô trong hàng; ô trống 
 - QR chứa `booking_code` trong nội dung chuyển khoản. SePay gọi `POST /webhooks/sepay`; endpoint yêu cầu header `Authorization: Apikey <SEPAY_WEBHOOK_API_KEY>` (hoặc `X-SePay-Api-Key`) và chỉ xác nhận giao dịch tiền vào đúng tài khoản, đúng mã đơn, đúng số tiền, còn hạn. ID giao dịch được lưu duy nhất để chống webhook lặp.
 - Trang checkout poll `GET /bookings/{id}/payment-status`; đơn hợp lệ tự mở trang vé sau khi webhook cập nhật `confirmed`. `payments:expire-unpaid` hủy đơn hết hạn và giải phóng ghế; scheduler phải chạy mỗi phút (`php artisan schedule:work` ở local hoặc cron Laravel scheduler ở production).
 - `.env`: `SEPAY_ENABLED=true`, `SEPAY_WEBHOOK_API_KEY`, `SEPAY_PAYMENT_TIMEOUT_MINUTES`, và thông tin tài khoản nhận VietQR (`BANK_CODE`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_HOLDER`). Dùng HTTPS URL công khai của server để khai báo webhook trong SePay; localhost không nhận được callback từ SePay. Giao dịch đến muộn/sai tài khoản/sai số tiền được lưu là không khớp và không tự phát hành vé.
+- Mô phỏng thanh toán chỉ bật riêng bằng `PAYMENT_DEMO_MODE=true` trong môi trường `local`/`testing`; luồng này xác nhận giả lập và không được phép chạy ở production.
 
 ---
 

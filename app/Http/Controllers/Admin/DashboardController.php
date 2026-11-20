@@ -93,7 +93,7 @@ class DashboardController extends Controller
                 'booked_seats' => $bookedEventSeats,
                 'total_seats' => $totalEventSeats,
                 'fill_rate' => $fillRate,
-                'poster' => $event->poster_path,
+                'poster' => $event->poster_url,
             ];
         })->sortByDesc('booked_seats')->values()->take(4);
 

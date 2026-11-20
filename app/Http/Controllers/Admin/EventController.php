@@ -97,7 +97,10 @@ class EventController extends Controller
         $newReleaseDate = $event->release_date;
         $syncShowtimes = $request->boolean('sync_showtimes', true);
 
-        if ($syncShowtimes && $newReleaseDate && $event->showtimes()->exists()) {
+        $releaseDateChanged = $oldReleaseDate?->toDateString() !== $newReleaseDate?->toDateString();
+        $hasExpiredShowtimes = $event->showtimes()->where('start_time', '<=', now())->exists();
+
+        if ($syncShowtimes && $newReleaseDate && ($releaseDateChanged || $hasExpiredShowtimes) && $event->showtimes()->exists()) {
             $showtimes = $event->showtimes()->orderBy('start_time')->get();
             $firstShowtime = $showtimes->first();
 

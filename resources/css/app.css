@@ -33,7 +33,7 @@
     }
 
     body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
         background-color: var(--bg-canvas);
         color: var(--color-black);
         overflow-x: hidden;

@@ -17,6 +17,8 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /auth.json
+/ticket-booking-*.json
+/doanmnm_ticket.sql
 /.fleet
 /.idea
 /.nova

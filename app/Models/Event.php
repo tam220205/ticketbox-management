@@ -184,6 +184,11 @@ class Event extends Model
             if (str_starts_with($this->poster_path, 'http://') || str_starts_with($this->poster_path, 'https://')) {
                 $driveFileId = $this->extractGoogleDriveFileId($this->poster_path);
                 if ($driveFileId !== null) {
+                    $localPoster = "images/event-posters/{$driveFileId}.jpg";
+                    if (is_file(public_path($localPoster))) {
+                        return asset($localPoster);
+                    }
+
                     // The proxy route is stable per event; version by Drive ID so browsers
                     // fetch the replacement immediately instead of reusing cached bytes.
                     return route('events.poster', $this).'?v='.rawurlencode($driveFileId);

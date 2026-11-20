@@ -15,9 +15,9 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
-                display: ['"Space Grotesk"', ...defaultTheme.fontFamily.sans],
-                serif: ['"Playfair Display"', ...defaultTheme.fontFamily.serif],
+                sans: ['"Plus Jakarta Sans"', '"Segoe UI"', 'Arial', ...defaultTheme.fontFamily.sans],
+                display: ['"Space Grotesk"', '"Plus Jakarta Sans"', '"Segoe UI"', 'Arial', ...defaultTheme.fontFamily.sans],
+                serif: ['"Playfair Display"', 'Georgia', ...defaultTheme.fontFamily.serif],
             },
             colors: {
                 obsidian: {

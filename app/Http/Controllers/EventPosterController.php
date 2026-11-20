@@ -22,7 +22,11 @@ class EventPosterController extends Controller
         });
 
         if ($image === null) {
-            return redirect("https://picsum.photos/seed/{$event->slug}/480/720");
+            // The browser can often reach a public Drive image even when the app
+            // server cannot reach Google's API (for example, local dev networks).
+            return redirect()->away(
+                'https://drive.google.com/uc?export=view&id='.rawurlencode($fileId)
+            );
         }
 
         return response($image['content'], Response::HTTP_OK, [

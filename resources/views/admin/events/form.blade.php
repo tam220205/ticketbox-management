@@ -172,10 +172,19 @@
         <div class="space-y-6">
             <div class="bg-white p-6 rounded-3xl border border-black/10 shadow-sm space-y-4">
                 <h3 class="font-display font-black text-lg">Poster</h3>
-                @if ($isEdit)
-                    <img src="{{ $event->poster_url }}" alt="{{ $event->title }}" class="w-full aspect-[2/3] object-cover rounded-2xl border border-black/10">
-                @endif
-                <x-admin.field label="Tải ảnh mới" name="poster" type="file" accept="image/jpeg,image/png,image/webp" hint="JPG/PNG/WEBP, tối đa 2MB." />
+                <div class="relative overflow-hidden rounded-2xl border border-black/10 bg-stone-50">
+                    <img
+                        id="poster-preview"
+                        @if ($event->poster_path) src="{{ $event->poster_url }}" @else hidden @endif
+                        alt="Xem trước poster {{ $event->title }}"
+                        class="w-full aspect-[2/3] object-cover"
+                    >
+                    <div id="poster-preview-placeholder" @if ($event->poster_path) hidden @endif class="aspect-[2/3] flex flex-col items-center justify-center gap-2 px-6 text-center text-stone-500">
+                        <svg class="w-10 h-10 text-stone-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" stroke-width="1.5"/><path d="m21 15-5-5L5 21" stroke-width="1.5"/></svg>
+                        <span id="poster-preview-message" class="text-xs font-medium">Chưa có poster. Chọn ảnh để xem trước.</span>
+                    </div>
+                </div>
+                <x-admin.field label="Tải ảnh mới" name="poster" type="file" accept="image/jpeg,image/png,image/webp" hint="JPG/PNG/WEBP, tối đa 2MB. Chọn ảnh để xem trước; ảnh hiện tại chỉ được thay khi lưu form." />
             </div>
 
             <div class="bg-white p-6 rounded-3xl border border-[#E3EAE4] shadow-sm flex flex-col gap-3">
@@ -190,4 +199,31 @@
             </div>
         </div>
     </form>
+
+    <script>
+        (() => {
+            const input = document.getElementById('poster');
+            const preview = document.getElementById('poster-preview');
+            const placeholder = document.getElementById('poster-preview-placeholder');
+            const message = document.getElementById('poster-preview-message');
+            if (!input || !preview || !placeholder || !message) return;
+
+            let previewUrl = null;
+            preview.addEventListener('error', () => {
+                preview.hidden = true;
+                placeholder.hidden = false;
+                message.textContent = 'Không tải được ảnh hiện tại. Hãy chọn ảnh mới hoặc kiểm tra quyền truy cập ảnh.';
+            });
+
+            input.addEventListener('change', () => {
+                const file = input.files?.[0];
+                if (!file) return;
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.hidden = false;
+                placeholder.hidden = true;
+            });
+        })();
+    </script>
 </x-admin-layout>

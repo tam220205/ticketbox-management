@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row gap-4 items-stretch">
         <!-- Poster Part -->
         <div class="w-full sm:w-28 h-36 shrink-0 rounded-2xl overflow-hidden bg-[#FAF9F6] relative">
-            <img src="{{ $movie->poster_path }}" alt="{{ $movie->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <img src="{{ $movie->poster_url }}" alt="{{ $movie->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
             <span class="absolute top-2 left-2 badge-gold text-[9px] px-2 py-0.5 rounded-full uppercase font-black shadow-sm">
                 Sự Kiện Hot
             </span>
